@@ -4,3 +4,4 @@ numpy
 matplotlib
 fpdf
 plotly
+streamlit-option-menu
