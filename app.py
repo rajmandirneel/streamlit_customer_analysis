@@ -10,15 +10,15 @@ st.set_page_config(page_title="Customer Loyalty Dashboard", layout="wide")
 st.markdown("<h1 style='text-align: center; color: #4CAF50;'>📊 Customer Loyalty & Segmentation Dashboard</h1>", unsafe_allow_html=True)
 
 # ---------- File Upload ----------
-uploaded_file = st.sidebar.file_uploader("Upload Excel File", type=["xlsx"])
-
-if not uploaded_file:
-    st.warning("Please upload an Excel file to continue.")
-    st.stop()
-
-df = pd.read_excel(uploaded_file)
-
+if "data" not in st.session_state:
+    uploaded_file = st.sidebar.file_uploader("Upload Excel File", type=["xlsx"])
+    if uploaded_file:
+        st.session_state["data"] = pd.read_excel(uploaded_file, engine="openpyxl")
+    else:
+        st.warning("Please upload an Excel file to continue.")
+        st.stop()
 # ---------- Preprocessing ----------
+df = st.session_state["data"]
 df = df[~df['Name'].str.lower().str.startswith(('loose', 'display'), na=False)]
 df['Invoice No.'] = df['Invoice No.'].astype(str)
 df['Mobile No.'] = df['Mobile No.'].astype(str)
@@ -141,3 +141,4 @@ with col2:
     st.markdown("**🔍 Tip:** Use Excel filters to explore exported data.")
 
 st.success("✅ Dashboard Loaded Successfully")
+
