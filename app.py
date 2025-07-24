@@ -52,15 +52,27 @@ st.markdown("""
 
 
 # ---------- File Upload ----------
-if "data" not in st.session_state:
-    uploaded_file = st.sidebar.file_uploader("Upload Excel File", type=["xlsx"])
-    if uploaded_file:
-        st.session_state["data"] = pd.read_excel(uploaded_file, engine="openpyxl")
-    else:
-        st.warning("Please upload an Excel file to continue.")
-        st.stop()
+uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"], key="file_uploader", accept_multiple_files=False)
+
+if uploaded_file:
+    st.success("✅ File uploaded successfully!")
+
+    if st.button("⚙️ Process File"):
+        try:
+            df = pd.read_excel(uploaded_file, engine="openpyxl")
+            st.session_state["data"] = df
+            st.success("✅ Processed successfully.")
+        except Exception as e:
+            st.error(f"❌ Error reading file: {e}")
+else:
+    st.warning("Please upload an Excel file to continue.")
+    st.stop()
+
 # ---------- Preprocessing ----------
-df = st.session_state["data"]
+if "data" in st.session_state:
+    df = st.session_state["data"]
+else:
+    st.stop()
 df = df[~df['Name'].str.lower().str.startswith(('loose', 'display'), na=False)]
 df['Invoice No.'] = df['Invoice No.'].astype(str)
 df['Mobile No.'] = df['Mobile No.'].astype(str)
@@ -224,21 +236,60 @@ st.plotly_chart(fig_bar, use_container_width=True)
 st.caption("🛈 This bar chart shows how frequently customers revisit. Each group counts unique customers.")
 
 # ---------- Sidebar Navigation ----------
+# ---------- Filter Navigation ----------
+Number_type = st.radio(
+    "Numbers Types",
+    ["Real Numbers", "Fake Numbers"],
+    horizontal=True
+)
+st.caption("🛈 Fake numbers are those which doesn't begin with 6-9 or more then 10 visit in a day")
+
+Loyality_type = st.radio(
+    "Loyality type",
+    ["All","Premium","Loyal","Regular","Bulk Buyer","Normal"],
+    horizontal=True
+)
+
 menu = st.radio(
-    "Customer View",
-    ["All", "Active", "At Risk", "Going to Dead", "Dead", "Fake Numbers","Real Numbers"],
+    "Customer Type",
+    ["All", "Active", "At Risk", "Going to Dead", "Dead"],
     horizontal=True
 )
 # ---------- Filter Based on Tab ----------
-if menu == "Fake Numbers":
-    data = df[df['fake_number']]
-elif menu == "Real Numbers":
-    data = df[~df['fake_number']]
-else:
-    data = df if menu == "All" else df[df['Customer_Type'] == menu]
+df['vouhcer_type'] = df['vouhcer_type'].str.lower()
+group_cols = [
+    'Mobile No.', 'First_Visit', 'Last_Visit', 'Avg_Days_Between',
+    'Visit_Count', 'Not_Visited_Since_Days', 'Avg_Invoice_Value',
+    'Customer_Type', 'fake_number', 'customer_loyalty_type'
+]
+bill_df = df[df['vouhcer_type'] == 'bill']
+return_df = df[df['vouhcer_type'] == 'return']
+bill_counts = bill_df.groupby('Mobile No.')['Invoice No.'].nunique().reset_index(name='Bill_Invoice_Count')
+return_counts = return_df.groupby('Mobile No.')['Invoice No.'].nunique().reset_index(name='Return_Invoice_Count')
+numbers_data = pd.merge(bill_counts, return_counts, on='Mobile No.', how='outer').fillna(0)
+filterdf = pd.merge(df, numbers_data, on='Mobile No.', how='left')
+filterdf['Bill_Invoice_Count'] = filterdf['Bill_Invoice_Count'].astype(int)
+filterdf['Return_Invoice_Count'] = filterdf['Return_Invoice_Count'].astype(int)
+output_data = filterdf.groupby(group_cols).agg({
+    'Bill_Invoice_Count': 'max',
+    'Return_Invoice_Count': 'max'
+}).reset_index()
 
+# ---------- Filter Based on Tab ----------
+if Number_type == "Real Numbers":
+    data = output_data[~output_data['fake_number']]
+else:
+    data = output_data[output_data['fake_number']]
+
+
+if Loyality_type == "All":
+    data = data
+else:
+    data = data[data['customer_loyalty_type'] == Loyality_type]
+
+data = data if menu == "All" else data[data['Customer_Type'] == menu]
 # ---------- Data Table ----------
-st.subheader(f"📄 Customer Table - {menu}")
+st.subheader(f"📄 Customer Table - {Number_type} of {Loyality_type} type customer's who at{menu}")
 st.dataframe(data, use_container_width=True)
 
 # ---------- Export Options ----------
@@ -249,7 +300,7 @@ with col1:
     st.download_button("📥 Download CSV", data=csv, file_name=f"{menu}_customers.csv", mime='text/csv')
 
 with col2:
-    st.markdown("**🔍 Tip:** Use Excel filters to explore exported data.")
+    st.markdown("**Tip:** Use filters to explore exported data.")
 
 st.success("✅ Dashboard Loaded Successfully")
 
