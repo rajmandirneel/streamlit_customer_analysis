@@ -48,7 +48,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 st.markdown("""
-<h1 style='color:#ffa500; text-align:center; font-size:60px; font-weight:800;'>🛒 Rajmandir Hypermarket - Customer Dashboard</h1>""", unsafe_allow_html=True)
+<h1 style='color:#ffa500; text-align:center; font-size:70px; font-weight:800;'>🛒 Rajmandir Hypermarket - Customer Dashboard</h1>""", unsafe_allow_html=True)
 
 
 # ---------- File Upload ----------
@@ -135,9 +135,9 @@ with k2:
 with k3:
     st.markdown(f"""
     <div class='gradient-card'>
-        <div class='label'>Repeat / Not Repeat</div>
+        <div class='label'>Repeat | Not Repeat</div>
         <div class='big-number'>
-            <span style='color: #28a745; font-weight: regular;'> {repeat_ratio:.0f}%</span> /
+            <span style='color: #28a745; font-weight: regular;'> {repeat_ratio:.0f}%</span> |
             <span style='color: #dc3545; font-weight: regular;'> {non_repeat_ratio:.0f}%</span>
         </div>
     </div>
