@@ -48,7 +48,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 st.markdown("""
-<h1 style='color:#ffa500; text-align:center; font-size:70px; font-weight:800;'>🛒 Rajmandir Hypermarket - Customer Dashboard</h1>""", unsafe_allow_html=True)
+<h1 style='color:#ffa500; text-align:center; font-size:70px; font-weight:800;'>🛒 Rajmandir Hypermarket - Customer Analysis</h1>""", unsafe_allow_html=True)
 
 
 # ---------- File Upload ----------
