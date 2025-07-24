@@ -64,14 +64,25 @@ df = st.session_state["data"]
 df = df[~df['Name'].str.lower().str.startswith(('loose', 'display'), na=False)]
 df['Invoice No.'] = df['Invoice No.'].astype(str)
 df['Mobile No.'] = df['Mobile No.'].astype(str)
+df['Code'] = df['Code'].astype(str)
+df['Name'] = df['Name'].astype(str)
 df['Date'] = pd.to_datetime(df['Date'])
 df['Qty'] = df['Qty'].astype(float)
-df['Days_Between'] = df.groupby('Mobile No.')['Date'].diff().dt.days
-df['Avg_Days_Between'] = df.groupby('Mobile No.')['Days_Between'].transform('mean').fillna(0)
+df['Net Value'] = df['Net Value'].astype(float)
+df['Company'] = df['Company'].astype(str)
+df['Brand'] = df['Brand'].astype(str)
+df['category'] = df['category'].astype(str)
+df['sub_category'] = df['sub_category'].astype(str)
+df['class'] = df['class'].astype(str)
+df['Counter No.'] = df['Counter No.'].astype(float)
+df['vouhcer_type'] = df['vouhcer_type'].astype(str)
+df['Days_Between'] = df.groupby('Mobile No.')['Date'].diff().dt.days.fillna(1)
+df['Avg_Days_Between'] = (df.groupby('Mobile No.')['Days_Between'].transform(lambda x: x[x > 0].mean() if any(x > 0) else 0))
 df['Visit_Count'] = df.groupby('Mobile No.')['Invoice No.'].transform('nunique')
 df['First_Visit'] = df.groupby('Mobile No.')['Date'].transform('min')
 df['Last_Visit'] = df.groupby('Mobile No.')['Date'].transform('max')
 df['Not_Visited_Since_Days'] = (pd.to_datetime('today') - df['Last_Visit']).dt.days
+df['Avg_Invoice_Value'] = df.groupby('Mobile No.')['Net Value'].transform('sum') / df.groupby('Mobile No.')['Invoice No.'].transform('nunique')
 
 # ---------- Classification ----------
 df['Customer_Type'] = np.select(
@@ -83,17 +94,21 @@ df['Customer_Type'] = np.select(
     ['Dead', 'Going to Dead', 'At Risk'],
     default='Active'
 )
-
 df['fake_number'] = (
     ((df['Avg_Days_Between'].round(0) == 0) & (df['Visit_Count'] > 10)) |
     (~df['Mobile No.'].apply(is_valid_mobile))
 )
-
-df['customer_loyalty_type'] = np.where(
-    (df['Visit_Count'].between(3, 10)) & (df['Avg_Days_Between'].between(26, 36)),
-    'Loyal',
-    'Normal'
+df['customer_loyalty_type'] = np.select(
+    [   
+        (df['Visit_Count']>=3) & (df['Avg_Days_Between'].between(22, 36)) & (df['Avg_Invoice_Value']>=10000),
+        (df['Visit_Count']>=3) & (df['Avg_Days_Between'].between(22, 36)) & (df['Avg_Invoice_Value']>=5000),
+        (df['Visit_Count']>=3) & (df['Avg_Days_Between'].between(22, 36)) & (df['Avg_Invoice_Value']>=1000),
+        (df['Visit_Count'].between(1,2) & (df['Avg_Invoice_Value']>=15000))
+    ],
+    ['Premium','Loyal','Regular','Bulk Buyer'],
+    default='Normal'
 )
+
 
 # Visit group for bar chart
 bins = [0, 2, 5, 9, float('inf')]
