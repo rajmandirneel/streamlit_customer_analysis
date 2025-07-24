@@ -6,3 +6,4 @@ fpdf
 plotly
 streamlit-option-menu
 openpyxl
+plotly.express
